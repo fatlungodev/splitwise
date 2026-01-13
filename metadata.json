@@ -1,0 +1,5 @@
+{
+  "name": "Splitwise Clone - Multi-Currency Splitter",
+  "description": "A comprehensive bill splitting application featuring group management, multi-currency support with exchange rates, OCR receipt scanning via Gemini, and simplified debt calculation.",
+  "requestFramePermissions": []
+}
