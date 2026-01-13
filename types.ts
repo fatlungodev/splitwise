@@ -31,6 +31,7 @@ export interface Group {
   baseCurrency: Currency;
   members: User[];
   expenses: Expense[];
+  date: string;
 }
 
 export interface Settlement {

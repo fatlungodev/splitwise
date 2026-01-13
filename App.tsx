@@ -17,7 +17,8 @@ const App: React.FC = () => {
       title: 'Tokyo Trip 2026 🇯🇵',
       baseCurrency: 'HKD',
       members: MOCK_USERS,
-      expenses: []
+      expenses: [],
+      date: new Date().toISOString().slice(0, 16)
     }
   ]);
   const [friends, setFriends] = useState<User[]>(MOCK_USERS);
@@ -27,17 +28,21 @@ const App: React.FC = () => {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [editingFriendId, setEditingFriendId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
   // Form States
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [newGroupCurrency, setNewGroupCurrency] = useState<Currency>('HKD');
+  const [newGroupDate, setNewGroupDate] = useState(new Date().toISOString().slice(0, 16));
   const [newFriendName, setNewFriendName] = useState('');
 
   // Expense Form State
   const [desc, setDesc] = useState('');
+  const [otherDesc, setOtherDesc] = useState('');
   const [amount, setAmount] = useState<number>(0);
   const [currency, setCurrency] = useState<Currency>('HKD');
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 16));
   const [payerId, setPayerId] = useState(friends[0]?.id || '');
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Others');
@@ -95,8 +100,10 @@ const App: React.FC = () => {
   const openAddModal = () => {
     setEditingExpenseId(null);
     setDesc('');
+    setOtherDesc('');
     setAmount(0);
     setCurrency(activeGroup?.baseCurrency || 'HKD');
+    setExpenseDate(new Date().toISOString().slice(0, 16));
     setPayerId('u1');
     setSelectedSplitters(activeGroup?.members.map(u => u.id) || []);
     setSelectedCategory('Others');
@@ -107,8 +114,10 @@ const App: React.FC = () => {
   const openEditModal = (expense: Expense) => {
     setEditingExpenseId(expense.id);
     setDesc(expense.description);
+    setOtherDesc(expense.category === 'Others' ? expense.description : '');
     setAmount(expense.amount);
     setCurrency(expense.currency);
+    setExpenseDate(expense.date.slice(0, 16));
     setPayerId(expense.payerId);
     setSelectedSplitters(expense.splitDetails.map(s => s.userId));
     setSelectedCategory(expense.category);
@@ -131,28 +140,62 @@ const App: React.FC = () => {
       title: newGroupTitle,
       baseCurrency: newGroupCurrency,
       members: friends,
-      expenses: []
+      expenses: [],
+      date: newGroupDate
     };
     setGroups(prev => [...prev, newGroup]);
     setActiveGroupId(newGroup.id);
     setIsGroupModalOpen(false);
     setNewGroupTitle('');
+    setNewGroupDate(new Date().toISOString().slice(0, 16));
   };
 
-  const handleAddFriend = () => {
+  const handleAddOrEditFriend = () => {
     if (!newFriendName) return;
-    const newFriend: User = {
-      id: 'u' + (friends.length + 1),
-      name: newFriendName,
-      avatar: `https://picsum.photos/seed/${newFriendName}/100`
-    };
-    setFriends(prev => [...prev, newFriend]);
+    
+    if (editingFriendId) {
+      setFriends(prev => prev.map(f => f.id === editingFriendId ? { ...f, name: newFriendName } : f));
+      setGroups(prev => prev.map(g => ({
+        ...g,
+        members: g.members.map(m => m.id === editingFriendId ? { ...m, name: newFriendName } : m)
+      })));
+    } else {
+      const newFriend: User = {
+        id: 'u' + (friends.length + 1) + Math.random().toString(36).substr(2, 4),
+        name: newFriendName,
+        avatar: `https://picsum.photos/seed/${newFriendName}${Math.random()}/100`
+      };
+      setFriends(prev => [...prev, newFriend]);
+    }
+    
     setIsFriendModalOpen(false);
     setNewFriendName('');
+    setEditingFriendId(null);
+  };
+
+  const handleDeleteFriend = (id: string) => {
+    const balance = friendBalances[id] || 0;
+    if (Math.abs(balance) > 0.1) {
+      alert("Cannot delete a friend with an outstanding balance!");
+      return;
+    }
+    if (confirm("Are you sure you want to remove this friend?")) {
+      setFriends(prev => prev.filter(f => f.id !== id));
+      setGroups(prev => prev.map(g => ({
+        ...g,
+        members: g.members.filter(m => m.id !== id)
+      })));
+      setIsFriendModalOpen(false);
+      setEditingFriendId(null);
+      setNewFriendName('');
+    }
   };
 
   const handleSaveExpense = () => {
-    if (!activeGroup || !desc || amount <= 0 || selectedSplitters.length === 0) return;
+    if (!activeGroup || amount <= 0 || selectedSplitters.length === 0) return;
+
+    // Use specific description if "Others", otherwise use general description or category name
+    const finalDesc = selectedCategory === 'Others' ? (otherDesc || 'Others') : (desc || selectedCategory);
 
     let finalSplitDetails: SplitDetail[] = [];
     if (splitMode === 'equal') {
@@ -175,25 +218,25 @@ const App: React.FC = () => {
       if (editingExpenseId) {
         newExpenses = g.expenses.map(e => 
           e.id === editingExpenseId 
-            ? { ...e, description: desc, amount, currency, exchangeRate: EXCHANGE_RATES[currency], payerId, splitDetails: finalSplitDetails, category: selectedCategory }
+            ? { ...e, description: finalDesc, amount, currency, exchangeRate: EXCHANGE_RATES[currency], payerId, splitDetails: finalSplitDetails, category: selectedCategory, date: expenseDate }
             : e
         );
       } else {
         const newExpense: Expense = {
           id: Math.random().toString(36).substr(2, 9),
           groupId: g.id,
-          description: desc,
+          description: finalDesc,
           amount,
           currency,
           exchangeRate: EXCHANGE_RATES[currency],
           payerId,
           splitDetails: finalSplitDetails,
-          date: new Date().toISOString(),
+          date: expenseDate,
           category: selectedCategory
         };
         newExpenses = [newExpense, ...g.expenses];
       }
-      return { ...g, expenses: newExpenses };
+      return { ...g, expenses: newExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
     });
 
     setGroups(updatedGroups);
@@ -262,7 +305,9 @@ const App: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-bold text-slate-800">{group.title}</h4>
-                <p className="text-xs text-slate-400">{group.members.length} members • {group.expenses.length} expenses</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                  {new Date(group.date).toLocaleDateString()} • {group.members.length} members
+                </p>
               </div>
             </div>
             <i className="fa-solid fa-chevron-right text-slate-300"></i>
@@ -277,7 +322,7 @@ const App: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Friends</h2>
         <button 
-          onClick={() => setIsFriendModalOpen(true)}
+          onClick={() => { setEditingFriendId(null); setNewFriendName(''); setIsFriendModalOpen(true); }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-all"
         >
           + Add Friend
@@ -298,22 +343,29 @@ const App: React.FC = () => {
         {friends.filter(f => f.id !== 'u1').map(user => {
           const balance = friendBalances[user.id] || 0;
           return (
-            <div key={user.id} className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-slate-50 transition-all hover:shadow-md">
+            <div 
+              key={user.id} 
+              onClick={() => { setEditingFriendId(user.id); setNewFriendName(user.name); setIsFriendModalOpen(true); }}
+              className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-slate-50 transition-all hover:shadow-md cursor-pointer group"
+            >
               <img src={user.avatar} className="w-12 h-12 rounded-full border-2 border-indigo-100" />
               <div className="flex-1">
-                <h4 className="font-bold text-slate-800">{user.name}</h4>
+                <h4 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{user.name}</h4>
                 <p className={`text-xs font-bold ${balance > 0 ? 'text-emerald-500' : balance < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
                   {balance > 0 ? `owes you $${balance.toFixed(1)}` : balance < 0 ? `you owe $${Math.abs(balance).toFixed(1)}` : 'settled up'}
                 </p>
               </div>
-              {Math.abs(balance) > 0 && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); alert(`Reminded ${user.name}!`); }}
-                  className="bg-slate-50 text-indigo-600 text-xs font-black px-3 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all"
-                >
-                  REMIND
-                </button>
-              )}
+              <div className="flex gap-2">
+                {Math.abs(balance) > 0 && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); alert(`Reminded ${user.name}!`); }}
+                    className="bg-slate-50 text-indigo-600 text-[10px] font-black px-3 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-tighter"
+                  >
+                    REMIND
+                  </button>
+                )}
+                <i className="fa-solid fa-pen-to-square text-slate-300 group-hover:text-indigo-400 self-center px-2"></i>
+              </div>
             </div>
           );
         })}
@@ -326,7 +378,6 @@ const App: React.FC = () => {
     return (
       <div className="">
         <div className="bg-indigo-600 text-white px-6 pb-8 pt-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
-          {/* Redesigned Larger Back Button */}
           <div className="mb-8 flex items-center">
             <button 
               onClick={() => setActiveGroupId(null)}
@@ -344,7 +395,7 @@ const App: React.FC = () => {
               <h2 className="text-3xl font-black leading-tight tracking-tight">{activeGroup.title}</h2>
               <div className="flex items-center gap-2 mt-2">
                  <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-sm">{activeGroup.baseCurrency}</span>
-                 <p className="opacity-70 text-[10px] font-black uppercase tracking-widest">Master Currency</p>
+                 <p className="opacity-70 text-[10px] font-black uppercase tracking-widest">{new Date(activeGroup.date).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -359,7 +410,6 @@ const App: React.FC = () => {
               <span className="text-xl font-black">{activeGroup.members.length} <span className="text-xs opacity-60">Members</span></span>
             </div>
           </div>
-          {/* Decorative background glass elements */}
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
         </div>
@@ -430,7 +480,12 @@ const App: React.FC = () => {
                       <i className={`fa-solid ${cat.icon}`}></i>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-slate-800 text-lg leading-tight truncate tracking-tight">{expense.description}</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-black text-slate-800 text-lg leading-tight truncate tracking-tight">{expense.description}</h4>
+                        <span className="text-[9px] font-black text-slate-300 uppercase whitespace-nowrap ml-2">
+                          {new Date(expense.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2 mt-1.5">
                         <img src={payer?.avatar} className="w-4 h-4 rounded-full" />
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{payer?.name} paid</p>
@@ -538,9 +593,9 @@ const App: React.FC = () => {
       {/* New Event Modal */}
       {isGroupModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl p-10 animate-in zoom-in duration-300 border border-slate-100">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl p-10 animate-in zoom-in duration-300 border border-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-black text-slate-800 mb-8 text-center tracking-tight">Create Event</h3>
-            <div className="space-y-8">
+            <div className="space-y-6">
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">What's the plan?</label>
                 <input 
@@ -549,6 +604,15 @@ const App: React.FC = () => {
                   className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black text-slate-800 placeholder:text-slate-300"
                   value={newGroupTitle}
                   onChange={(e) => setNewGroupTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Event Date</label>
+                <input 
+                  type="datetime-local"
+                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] font-black text-slate-800 outline-none"
+                  value={newGroupDate}
+                  onChange={(e) => setNewGroupDate(e.target.value)}
                 />
               </div>
               <div>
@@ -561,7 +625,7 @@ const App: React.FC = () => {
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="flex flex-col gap-4 mt-10">
+              <div className="flex flex-col gap-3 mt-6">
                 <button 
                   onClick={handleCreateGroup}
                   disabled={!newGroupTitle}
@@ -576,31 +640,47 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* New Friend Modal */}
+      {/* New/Edit Friend Modal */}
       {isFriendModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl p-10 animate-in zoom-in duration-300 border border-slate-100">
-            <h3 className="text-2xl font-black text-slate-800 mb-8 text-center tracking-tight">Add Friend</h3>
+            <h3 className="text-2xl font-black text-slate-800 mb-8 text-center tracking-tight">
+              {editingFriendId ? 'Edit Friend' : 'Add Friend'}
+            </h3>
             <div className="space-y-8">
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Full Name</label>
                 <input 
                   type="text" 
                   placeholder="e.g. David Smith"
-                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black placeholder:text-slate-300"
+                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black placeholder:text-slate-300 text-slate-800"
                   value={newFriendName}
                   onChange={(e) => setNewFriendName(e.target.value)}
+                  autoFocus
                 />
               </div>
-              <div className="flex flex-col gap-4 mt-10">
+              <div className="flex flex-col gap-3 mt-10">
                 <button 
-                  onClick={handleAddFriend}
+                  onClick={handleAddOrEditFriend}
                   disabled={!newFriendName}
                   className="w-full bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-indigo-100 active:scale-95 transition-all"
                 >
-                  Add Contact
+                  {editingFriendId ? 'Update Info' : 'Add Contact'}
                 </button>
-                <button onClick={() => setIsFriendModalOpen(false)} className="w-full py-4 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] hover:text-rose-500 transition-colors">Discard</button>
+                {editingFriendId && (
+                  <button 
+                    onClick={() => handleDeleteFriend(editingFriendId)}
+                    className="w-full bg-rose-50 text-rose-500 py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                  >
+                    Delete Friend
+                  </button>
+                )}
+                <button 
+                  onClick={() => { setIsFriendModalOpen(false); setEditingFriendId(null); setNewFriendName(''); }} 
+                  className="w-full py-2 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] hover:text-indigo-600 transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -647,9 +727,40 @@ const App: React.FC = () => {
 
               <div className="space-y-8">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">Description</label>
-                  <input type="text" placeholder="Entry Title" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300" value={desc} onChange={(e) => setDesc(e.target.value)} />
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block px-2">Categorize</label>
+                  <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide px-2">
+                    {CATEGORIES.map(cat => (
+                      <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex-shrink-0 flex items-center gap-4 px-6 py-4 rounded-3xl border transition-all ${selectedCategory === cat.name ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 scale-110' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'}`}>
+                        <i className={`fa-solid ${cat.icon} text-sm`}></i>
+                        <span className="text-[11px] font-black uppercase tracking-widest">{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {selectedCategory === 'Others' ? (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">What is this for?</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Movie Tickets, Shared Gift" 
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300" 
+                      value={otherDesc} 
+                      onChange={(e) => setOtherDesc(e.target.value)} 
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">Notes (Optional)</label>
+                    <input 
+                      type="text" 
+                      placeholder={`Details about this ${selectedCategory.toLowerCase()}`} 
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300" 
+                      value={desc} 
+                      onChange={(e) => setDesc(e.target.value)} 
+                    />
+                  </div>
+                )}
                 
                 <div className="flex gap-5">
                   <div className="flex-[2]">
@@ -662,6 +773,16 @@ const App: React.FC = () => {
                       {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] font-black text-slate-800 outline-none" 
+                    value={expenseDate} 
+                    onChange={(e) => setExpenseDate(e.target.value)} 
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-slate-100 rounded-[2.5rem] shadow-inner">
@@ -701,18 +822,6 @@ const App: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block px-2">Categorize</label>
-                  <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide px-2">
-                    {CATEGORIES.map(cat => (
-                      <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex-shrink-0 flex items-center gap-4 px-6 py-4 rounded-3xl border transition-all ${selectedCategory === cat.name ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 scale-110' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'}`}>
-                        <i className={`fa-solid ${cat.icon} text-sm`}></i>
-                        <span className="text-[11px] font-black uppercase tracking-widest">{cat.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block px-2">Payer</label>
                   <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide px-2">
                     {activeGroup?.members.map(user => (
@@ -742,7 +851,7 @@ const App: React.FC = () => {
 
               <button 
                 onClick={handleSaveExpense} 
-                disabled={!desc || amount <= 0 || selectedSplitters.length === 0 || (splitMode === 'custom' && Math.abs(splitDifference) > 0.01)} 
+                disabled={!selectedCategory || amount <= 0 || selectedSplitters.length === 0 || (splitMode === 'custom' && Math.abs(splitDifference) > 0.01) || (selectedCategory === 'Others' && !otherDesc)} 
                 className="w-full mt-12 bg-indigo-600 text-white py-8 rounded-[3rem] font-black uppercase text-base tracking-[0.3em] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-300 active:scale-[0.98] transition-all mb-12"
               >
                 {editingExpenseId ? 'Commit Changes' : 'Post Entry'}
