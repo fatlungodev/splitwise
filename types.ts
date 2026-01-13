@@ -32,6 +32,7 @@ export interface Group {
   members: User[];
   expenses: Expense[];
   date: string;
+  icon?: string;
 }
 
 export interface Settlement {

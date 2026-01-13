@@ -1,10 +1,13 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Group, User, Expense, Currency, SplitDetail } from './types';
-import { MOCK_USERS, CURRENCIES, EXCHANGE_RATES, CATEGORIES } from './constants';
+import { MOCK_USERS, CURRENCIES, EXCHANGE_RATES, CATEGORIES, getAssetPath } from './constants';
 import Layout from './components/Layout';
 import { calculateSimplifiedDebts } from './services/debtService';
 import { scanReceipt } from './services/geminiService';
+
+const EVENT_ICONS = ['✈️', '🏠', '🎉', '🏔️', '🍔', '🥂', '🎮', '🎬'];
 
 type Tab = 'Groups' | 'Friends' | 'Analysis' | 'Profile';
 type SplitMode = 'equal' | 'custom';
@@ -35,6 +38,7 @@ const App: React.FC = () => {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [newGroupCurrency, setNewGroupCurrency] = useState<Currency>('HKD');
   const [newGroupDate, setNewGroupDate] = useState(new Date().toISOString().slice(0, 16));
+  const [newGroupIcon, setNewGroupIcon] = useState('✈️');
   const [newFriendName, setNewFriendName] = useState('');
 
   // Expense Form State
@@ -141,12 +145,14 @@ const App: React.FC = () => {
       baseCurrency: newGroupCurrency,
       members: friends,
       expenses: [],
-      date: newGroupDate
+      date: newGroupDate,
+      icon: newGroupIcon
     };
     setGroups(prev => [...prev, newGroup]);
     setActiveGroupId(newGroup.id);
     setIsGroupModalOpen(false);
     setNewGroupTitle('');
+    setNewGroupIcon('✈️');
     setNewGroupDate(new Date().toISOString().slice(0, 16));
   };
 
@@ -163,7 +169,7 @@ const App: React.FC = () => {
       const newFriend: User = {
         id: 'u' + (friends.length + 1) + Math.random().toString(36).substr(2, 4),
         name: newFriendName,
-        avatar: '/avatars/default.jpg'
+        avatar: getAssetPath('/avatars/default.jpg')
       };
       setFriends(prev => [...prev, newFriend]);
     }
@@ -284,10 +290,10 @@ const App: React.FC = () => {
   const renderGroupList = () => (
     <div className="px-6 py-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">My Events</h2>
+        <h2 className="text-2xl font-display font-bold text-slate-900 tracking-tight">My Events</h2>
         <button
           onClick={() => setIsGroupModalOpen(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-all"
+          className="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-brand-100 active:scale-95 transition-all"
         >
           + New Event
         </button>
@@ -297,11 +303,11 @@ const App: React.FC = () => {
           <div
             key={group.id}
             onClick={() => { setActiveGroupId(group.id); setActiveTab('Groups'); }}
-            className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-indigo-300 transition-all flex items-center justify-between group"
+            className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-brand-300 transition-all flex items-center justify-between group"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                {group.expenses.length > 0 ? '💰' : '🗓️'}
+              <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                {group.icon || '️'}
               </div>
               <div>
                 <h4 className="font-bold text-slate-800">{group.title}</h4>
@@ -320,22 +326,22 @@ const App: React.FC = () => {
   const renderFriends = () => (
     <div className="px-6 py-8 animate-in slide-in-from-bottom duration-500">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Friends</h2>
+        <h2 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Friends</h2>
         <button
           onClick={() => { setEditingFriendId(null); setNewFriendName(''); setIsFriendModalOpen(true); }}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-all"
+          className="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-brand-100 active:scale-95 transition-all"
         >
           + Add Friend
         </button>
       </div>
 
-      <div className="bg-indigo-50 p-4 rounded-2xl mb-6 border border-indigo-100">
-        <p className="text-[10px] uppercase font-bold text-indigo-400 mb-1">Overall Balance</p>
+      <div className="bg-brand-50 p-4 rounded-2xl mb-6 border border-brand-100">
+        <p className="text-[10px] uppercase font-bold text-brand-400 mb-1">Overall Balance</p>
         <div className="flex items-end gap-2">
-          <span className="text-2xl font-black text-indigo-900">
+          <span className="text-2xl font-black text-brand-900">
             ${Object.values(friendBalances).reduce((a: number, b: number) => a + b, 0).toFixed(1)}
           </span>
-          <span className="text-xs font-bold text-indigo-400 mb-1">HKD Total Owed to You</span>
+          <span className="text-xs font-bold text-brand-400 mb-1">HKD Total Owed to You</span>
         </div>
       </div>
 
@@ -348,9 +354,9 @@ const App: React.FC = () => {
               onClick={() => { setEditingFriendId(user.id); setNewFriendName(user.name); setIsFriendModalOpen(true); }}
               className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-slate-50 transition-all hover:shadow-md cursor-pointer group"
             >
-              <img src={user.avatar} className="w-12 h-12 rounded-full border-2 border-indigo-100" />
+              <img src={user.avatar} className="w-12 h-12 rounded-full border-2 border-brand-100" />
               <div className="flex-1">
-                <h4 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{user.name}</h4>
+                <h4 className="font-bold text-slate-800 group-hover:text-brand-600 transition-colors">{user.name}</h4>
                 <p className={`text-xs font-bold ${balance > 0 ? 'text-emerald-500' : balance < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
                   {balance > 0 ? `owes you $${balance.toFixed(1)}` : balance < 0 ? `you owe $${Math.abs(balance).toFixed(1)}` : 'settled up'}
                 </p>
@@ -359,12 +365,12 @@ const App: React.FC = () => {
                 {Math.abs(balance) > 0 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); alert(`Reminded ${user.name}!`); }}
-                    className="bg-slate-50 text-indigo-600 text-[10px] font-black px-3 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-tighter"
+                    className="bg-slate-50 text-brand-600 text-[10px] font-black px-3 py-2 rounded-lg hover:bg-brand-600 hover:text-white transition-all uppercase tracking-tighter"
                   >
                     REMIND
                   </button>
                 )}
-                <i className="fa-solid fa-pen-to-square text-slate-300 group-hover:text-indigo-400 self-center px-2"></i>
+                <i className="fa-solid fa-pen-to-square text-slate-300 group-hover:text-brand-400 self-center px-2"></i>
               </div>
             </div>
           );
@@ -377,7 +383,7 @@ const App: React.FC = () => {
     if (!activeGroup) return null;
     return (
       <div className="">
-        <div className="bg-indigo-600 text-white px-6 pb-8 pt-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
+        <div className="bg-brand-600 text-white px-6 pb-8 pt-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
           <div className="mb-8 flex items-center">
             <button
               onClick={() => setActiveGroupId(null)}
@@ -390,7 +396,9 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-[2rem] flex items-center justify-center text-4xl shadow-inner rotate-3">✈️</div>
+            <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-[2rem] flex items-center justify-center text-4xl shadow-inner rotate-3">
+              {activeGroup.icon || '✈️'}
+            </div>
             <div className="flex-1">
               <h2 className="text-3xl font-black leading-tight tracking-tight">{activeGroup.title}</h2>
               <div className="flex items-center gap-2 mt-2">
@@ -411,7 +419,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
+          <div className="absolute top-1/2 -left-10 w-32 h-32 bg-brand-400/20 rounded-full blur-2xl"></div>
         </div>
 
         <div className="px-6 py-8">
@@ -474,7 +482,7 @@ const App: React.FC = () => {
                   <div
                     key={expense.id}
                     onClick={() => openEditModal(expense)}
-                    className="flex items-center gap-5 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 cursor-pointer hover:shadow-xl hover:border-indigo-100 transition-all active:scale-[0.98] group"
+                    className="flex items-center gap-5 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 cursor-pointer hover:shadow-xl hover:border-brand-100 transition-all active:scale-[0.98] group"
                   >
                     <div className={`w-14 h-14 rounded-3xl ${cat.color} flex items-center justify-center text-white text-2xl shadow-xl shadow-inner group-hover:scale-110 transition-transform`}>
                       <i className={`fa-solid ${cat.icon}`}></i>
@@ -554,38 +562,38 @@ const App: React.FC = () => {
       {activeTab === 'Profile' && (
         <div className="px-6 py-12 text-center">
           <div className="relative inline-block mb-10">
-            <div className="w-36 h-36 bg-indigo-600 rounded-[3rem] absolute -inset-2 rotate-6 opacity-10"></div>
+            <div className="w-36 h-36 bg-brand-600 rounded-[3rem] absolute -inset-2 rotate-6 opacity-10"></div>
             <img src={friends[0]?.avatar} className="w-32 h-32 rounded-[2.5rem] border-8 border-white shadow-2xl relative z-10" />
             <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500 rounded-3xl border-8 border-white flex items-center justify-center text-white text-sm shadow-xl z-20">
               <i className="fa-solid fa-check"></i>
             </div>
           </div>
           <h2 className="text-3xl font-black text-slate-800 tracking-tight">{friends[0]?.name}</h2>
-          <div className="inline-block mt-2 px-4 py-1.5 bg-indigo-50 rounded-full">
-            <p className="text-indigo-500 font-black uppercase text-[10px] tracking-[0.25em]">Splitify Elite Member</p>
+          <div className="inline-block mt-2 px-4 py-1.5 bg-brand-50 rounded-full">
+            <p className="text-brand-500 font-black uppercase text-[10px] tracking-[0.25em]">Splitify Elite Member</p>
           </div>
 
           <div className="space-y-4 mt-12">
-            <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all shadow-sm">
+            <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-brand-50/50 hover:border-brand-100 transition-all shadow-sm">
               <div className="flex items-center gap-5">
-                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-credit-card text-xl"></i></div>
+                <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-credit-card text-xl"></i></div>
                 <span className="text-sm font-black uppercase tracking-widest">Payment Wallets</span>
               </div>
-              <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
+              <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-brand-400 group-hover:translate-x-2 transition-all"></i>
             </button>
-            <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all shadow-sm">
+            <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-brand-50/50 hover:border-brand-100 transition-all shadow-sm">
               <div className="flex items-center gap-5">
-                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-file-export text-xl"></i></div>
+                <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-file-export text-xl"></i></div>
                 <span className="text-sm font-black uppercase tracking-widest">Export Ledger</span>
               </div>
-              <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
+              <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-brand-400 group-hover:translate-x-2 transition-all"></i>
             </button>
           </div>
         </div>
       )}
 
       {activeTab === 'Groups' && activeGroupId && (
-        <button onClick={openAddModal} className="fixed bottom-28 right-8 w-20 h-20 bg-indigo-600 text-white rounded-[2rem] shadow-2xl flex items-center justify-center text-4xl hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-all z-50 shadow-indigo-300 ring-8 ring-white/50 backdrop-blur-sm">
+        <button onClick={openAddModal} className="fixed bottom-28 right-8 w-20 h-20 bg-brand-600 text-white rounded-[2rem] shadow-2xl flex items-center justify-center text-4xl hover:bg-brand-700 hover:scale-110 active:scale-95 transition-all z-50 shadow-brand-300 ring-8 ring-white/50 backdrop-blur-sm">
           <i className="fa-solid fa-plus"></i>
         </button>
       )}
@@ -601,11 +609,28 @@ const App: React.FC = () => {
                 <input
                   type="text"
                   placeholder="e.g. Europe Trip"
-                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black text-slate-800 placeholder:text-slate-300"
+                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-brand-500/5 outline-none transition-all font-black text-slate-800 placeholder:text-slate-300"
                   value={newGroupTitle}
                   onChange={(e) => setNewGroupTitle(e.target.value)}
                 />
               </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Choose Icon</label>
+                <div className="flex flex-wrap gap-2">
+                  {EVENT_ICONS.map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => setNewGroupIcon(icon)}
+                      className={`w-12 h-12 text-2xl rounded-2xl flex items-center justify-center transition-all ${newGroupIcon === icon ? 'bg-brand-600 text-white shadow-lg scale-110' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Event Date</label>
                 <input
@@ -629,7 +654,7 @@ const App: React.FC = () => {
                 <button
                   onClick={handleCreateGroup}
                   disabled={!newGroupTitle}
-                  className="w-full bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-indigo-100 active:scale-95 transition-all"
+                  className="w-full bg-brand-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-brand-100 active:scale-95 transition-all"
                 >
                   Confirm Event
                 </button>
@@ -653,7 +678,7 @@ const App: React.FC = () => {
                 <input
                   type="text"
                   placeholder="e.g. David Smith"
-                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black placeholder:text-slate-300 text-slate-800"
+                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-brand-500/5 outline-none transition-all font-black placeholder:text-slate-300 text-slate-800"
                   value={newFriendName}
                   onChange={(e) => setNewFriendName(e.target.value)}
                   autoFocus
@@ -663,7 +688,7 @@ const App: React.FC = () => {
                 <button
                   onClick={handleAddOrEditFriend}
                   disabled={!newFriendName}
-                  className="w-full bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-indigo-100 active:scale-95 transition-all"
+                  className="w-full bg-brand-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-brand-100 active:scale-95 transition-all"
                 >
                   {editingFriendId ? 'Update Info' : 'Add Contact'}
                 </button>
@@ -677,7 +702,7 @@ const App: React.FC = () => {
                 )}
                 <button
                   onClick={() => { setIsFriendModalOpen(false); setEditingFriendId(null); setNewFriendName(''); }}
-                  className="w-full py-2 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] hover:text-indigo-600 transition-colors"
+                  className="w-full py-2 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] hover:text-brand-600 transition-colors"
                 >
                   Cancel
                 </button>
@@ -706,19 +731,19 @@ const App: React.FC = () => {
 
               {!editingExpenseId && (
                 <div className="mb-10">
-                  <label className="relative flex items-center justify-center gap-5 w-full p-8 border-4 border-dashed border-indigo-100 rounded-[3rem] bg-indigo-50/20 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group">
+                  <label className="relative flex items-center justify-center gap-5 w-full p-8 border-4 border-dashed border-brand-100 rounded-[3rem] bg-brand-50/20 cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition-all group">
                     <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={isScanning} />
                     {isScanning ? (
-                      <div className="flex items-center gap-4 text-indigo-600 font-black animate-pulse uppercase text-sm tracking-[0.2em]">
+                      <div className="flex items-center gap-4 text-brand-600 font-black animate-pulse uppercase text-sm tracking-[0.2em]">
                         <i className="fa-solid fa-circle-notch fa-spin text-xl"></i>
                         <span>AI Parsing...</span>
                       </div>
                     ) : (
                       <>
-                        <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                        <div className="w-14 h-14 bg-brand-100 text-brand-600 rounded-3xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                           <i className="fa-solid fa-wand-magic-sparkles text-2xl"></i>
                         </div>
-                        <span className="font-black text-sm text-indigo-600 uppercase tracking-[0.2em]">Scan Receipt</span>
+                        <span className="font-black text-sm text-brand-600 uppercase tracking-[0.2em]">Scan Receipt</span>
                       </>
                     )}
                   </label>
@@ -730,7 +755,7 @@ const App: React.FC = () => {
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block px-2">Categorize</label>
                   <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide px-2">
                     {CATEGORIES.map(cat => (
-                      <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex-shrink-0 flex items-center gap-4 px-6 py-4 rounded-3xl border transition-all ${selectedCategory === cat.name ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 scale-110' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'}`}>
+                      <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex-shrink-0 flex items-center gap-4 px-6 py-4 rounded-3xl border transition-all ${selectedCategory === cat.name ? 'bg-brand-600 border-brand-600 text-white shadow-xl shadow-brand-200 scale-110' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-200'}`}>
                         <i className={`fa-solid ${cat.icon} text-sm`}></i>
                         <span className="text-[11px] font-black uppercase tracking-widest">{cat.name}</span>
                       </button>
@@ -744,7 +769,7 @@ const App: React.FC = () => {
                     <input
                       type="text"
                       placeholder="e.g. Movie Tickets, Shared Gift"
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300"
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-brand-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300"
                       value={otherDesc}
                       onChange={(e) => setOtherDesc(e.target.value)}
                     />
@@ -755,7 +780,7 @@ const App: React.FC = () => {
                     <input
                       type="text"
                       placeholder={`Details about this ${selectedCategory.toLowerCase()}`}
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300"
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-brand-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300"
                       value={desc}
                       onChange={(e) => setDesc(e.target.value)}
                     />
@@ -786,14 +811,14 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-slate-100 rounded-[2.5rem] shadow-inner">
-                  <button onClick={() => setSplitMode('equal')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'equal' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Equal Split</button>
-                  <button onClick={() => setSplitMode('custom')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'custom' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Custom</button>
+                  <button onClick={() => setSplitMode('equal')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'equal' ? 'bg-white shadow-md text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}>Equal Split</button>
+                  <button onClick={() => setSplitMode('custom')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'custom' ? 'bg-white shadow-md text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}>Custom</button>
                 </div>
 
                 {splitMode === 'custom' && (
-                  <div className="p-8 bg-indigo-50/30 rounded-[3.5rem] border border-indigo-50/50 shadow-inner animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="p-8 bg-brand-50/30 rounded-[3.5rem] border border-brand-50/50 shadow-inner animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="flex justify-between items-center mb-6 px-2">
-                      <span className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.2em]">Unallocated</span>
+                      <span className="text-[11px] font-black text-brand-400 uppercase tracking-[0.2em]">Unallocated</span>
                       <span className={`text-base font-black ${Math.abs(splitDifference) < 0.01 ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {splitDifference.toFixed(2)} <span className="text-[10px] opacity-60">{currency}</span>
                       </span>
@@ -809,7 +834,7 @@ const App: React.FC = () => {
                               <input
                                 type="number"
                                 disabled={!isSelected}
-                                className="w-28 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-right text-sm font-black focus:ring-4 focus:ring-indigo-500/10 outline-none shadow-sm"
+                                className="w-28 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-right text-sm font-black focus:ring-4 focus:ring-brand-500/10 outline-none shadow-sm"
                                 value={customSplits[user.id] || ''}
                                 onChange={(e) => handleCustomSplitChange(user.id, e.target.value)}
                               />
@@ -825,7 +850,7 @@ const App: React.FC = () => {
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block px-2">Payer</label>
                   <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide px-2">
                     {activeGroup?.members.map(user => (
-                      <button key={user.id} onClick={() => setPayerId(user.id)} className={`flex-shrink-0 flex items-center gap-4 px-6 py-4 rounded-3xl border transition-all ${payerId === user.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 scale-110' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'}`}>
+                      <button key={user.id} onClick={() => setPayerId(user.id)} className={`flex-shrink-0 flex items-center gap-4 px-6 py-4 rounded-3xl border transition-all ${payerId === user.id ? 'bg-brand-600 border-brand-600 text-white shadow-xl shadow-brand-200 scale-110' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-200'}`}>
                         <img src={user.avatar} className="w-8 h-8 rounded-xl shadow-sm border-2 border-white/20" />
                         <span className="text-[11px] font-black uppercase tracking-widest">{user.id === 'u1' ? 'Myself' : user.name}</span>
                       </button>
@@ -839,9 +864,9 @@ const App: React.FC = () => {
                     {activeGroup?.members.map(user => {
                       const isSelected = selectedSplitters.includes(user.id);
                       return (
-                        <button key={user.id} onClick={() => setSelectedSplitters(prev => isSelected ? prev.filter(id => id !== user.id) : [...prev, user.id])} className={`flex-shrink-0 flex flex-col items-center gap-4 p-5 rounded-[2.5rem] border transition-all ${isSelected ? 'bg-indigo-50 border-indigo-300 shadow-md scale-110' : 'bg-white border-slate-100 grayscale opacity-40 hover:opacity-100'}`}>
-                          <img src={user.avatar} className={`w-14 h-14 rounded-[1.5rem] transition-all ${isSelected ? 'ring-8 ring-indigo-500/10 shadow-lg' : ''}`} />
-                          <span className={`text-[11px] font-black uppercase tracking-widest ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`}>{user.name}</span>
+                        <button key={user.id} onClick={() => setSelectedSplitters(prev => isSelected ? prev.filter(id => id !== user.id) : [...prev, user.id])} className={`flex-shrink-0 flex flex-col items-center gap-4 p-5 rounded-[2.5rem] border transition-all ${isSelected ? 'bg-brand-50 border-brand-300 shadow-md scale-110' : 'bg-white border-slate-100 grayscale opacity-40 hover:opacity-100'}`}>
+                          <img src={user.avatar} className={`w-14 h-14 rounded-[1.5rem] transition-all ${isSelected ? 'ring-8 ring-brand-500/10 shadow-lg' : ''}`} />
+                          <span className={`text-[11px] font-black uppercase tracking-widest ${isSelected ? 'text-brand-600' : 'text-slate-400'}`}>{user.name}</span>
                         </button>
                       );
                     })}
@@ -852,7 +877,7 @@ const App: React.FC = () => {
               <button
                 onClick={handleSaveExpense}
                 disabled={!selectedCategory || amount <= 0 || selectedSplitters.length === 0 || (splitMode === 'custom' && Math.abs(splitDifference) > 0.01) || (selectedCategory === 'Others' && !otherDesc)}
-                className="w-full mt-12 bg-indigo-600 text-white py-8 rounded-[3rem] font-black uppercase text-base tracking-[0.3em] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-300 active:scale-[0.98] transition-all mb-12"
+                className="w-full mt-12 bg-brand-600 text-white py-8 rounded-[3rem] font-black uppercase text-base tracking-[0.3em] shadow-2xl shadow-brand-200 hover:bg-brand-700 disabled:bg-slate-100 disabled:text-slate-300 active:scale-[0.98] transition-all mb-12"
               >
                 {editingExpenseId ? 'Commit Changes' : 'Post Entry'}
               </button>

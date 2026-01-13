@@ -12,10 +12,15 @@ export const CATEGORIES = [
   { name: 'Others', icon: 'fa-ellipsis-h', color: 'bg-gray-500' },
 ];
 
+export const getAssetPath = (path: string) => {
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base.replace(/\/$/, '')}${path}`;
+};
+
 export const MOCK_USERS: User[] = [
-  { id: 'u1', name: 'Alice', avatar: '/avatars/alice.jpg' },
-  { id: 'u2', name: 'Bob', avatar: '/avatars/bob.jpg' },
-  { id: 'u3', name: 'Charlie', avatar: '/avatars/charlie.jpg' },
+  { id: 'u1', name: 'Alice', avatar: getAssetPath('/avatars/alice.jpg') },
+  { id: 'u2', name: 'Bob', avatar: getAssetPath('/avatars/bob.jpg') },
+  { id: 'u3', name: 'Charlie', avatar: getAssetPath('/avatars/charlie.jpg') },
 ];
 
 export const EXCHANGE_RATES: Record<Currency, number> = {
