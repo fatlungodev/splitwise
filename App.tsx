@@ -49,17 +49,17 @@ const App: React.FC = () => {
   const [splitMode, setSplitMode] = useState<SplitMode>('equal');
   const [customSplits, setCustomSplits] = useState<Record<string, number>>({});
 
-  const activeGroup = useMemo(() => 
+  const activeGroup = useMemo(() =>
     groups.find(g => g.id === activeGroupId) || null,
-  [groups, activeGroupId]);
+    [groups, activeGroupId]);
 
-  const settlements = useMemo(() => 
-    activeGroup ? calculateSimplifiedDebts(activeGroup) : [], 
-  [activeGroup]);
+  const settlements = useMemo(() =>
+    activeGroup ? calculateSimplifiedDebts(activeGroup) : [],
+    [activeGroup]);
 
-  const totalSpent = useMemo(() => 
+  const totalSpent = useMemo(() =>
     activeGroup ? activeGroup.expenses.reduce((sum, e) => sum + (e.amount * e.exchangeRate), 0) : 0,
-  [activeGroup]);
+    [activeGroup]);
 
   // Calculate Global Friend Balances
   const friendBalances = useMemo(() => {
@@ -121,13 +121,13 @@ const App: React.FC = () => {
     setPayerId(expense.payerId);
     setSelectedSplitters(expense.splitDetails.map(s => s.userId));
     setSelectedCategory(expense.category);
-    
+
     const splits: Record<string, number> = {};
     expense.splitDetails.forEach(s => {
       splits[s.userId] = s.amount;
     });
     setCustomSplits(splits);
-    
+
     const isEqual = expense.splitDetails.every(s => Math.abs(s.amount - (expense.amount / expense.splitDetails.length)) < 0.1);
     setSplitMode(isEqual ? 'equal' : 'custom');
     setIsModalOpen(true);
@@ -152,7 +152,7 @@ const App: React.FC = () => {
 
   const handleAddOrEditFriend = () => {
     if (!newFriendName) return;
-    
+
     if (editingFriendId) {
       setFriends(prev => prev.map(f => f.id === editingFriendId ? { ...f, name: newFriendName } : f));
       setGroups(prev => prev.map(g => ({
@@ -163,11 +163,11 @@ const App: React.FC = () => {
       const newFriend: User = {
         id: 'u' + (friends.length + 1) + Math.random().toString(36).substr(2, 4),
         name: newFriendName,
-        avatar: `https://picsum.photos/seed/${newFriendName}${Math.random()}/100`
+        avatar: '/avatars/default.jpg'
       };
       setFriends(prev => [...prev, newFriend]);
     }
-    
+
     setIsFriendModalOpen(false);
     setNewFriendName('');
     setEditingFriendId(null);
@@ -213,11 +213,11 @@ const App: React.FC = () => {
 
     const updatedGroups = groups.map(g => {
       if (g.id !== activeGroupId) return g;
-      
+
       let newExpenses;
       if (editingExpenseId) {
-        newExpenses = g.expenses.map(e => 
-          e.id === editingExpenseId 
+        newExpenses = g.expenses.map(e =>
+          e.id === editingExpenseId
             ? { ...e, description: finalDesc, amount, currency, exchangeRate: EXCHANGE_RATES[currency], payerId, splitDetails: finalSplitDetails, category: selectedCategory, date: expenseDate }
             : e
         );
@@ -285,7 +285,7 @@ const App: React.FC = () => {
     <div className="px-6 py-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">My Events</h2>
-        <button 
+        <button
           onClick={() => setIsGroupModalOpen(true)}
           className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-all"
         >
@@ -294,8 +294,8 @@ const App: React.FC = () => {
       </div>
       <div className="space-y-4">
         {groups.map(group => (
-          <div 
-            key={group.id} 
+          <div
+            key={group.id}
             onClick={() => { setActiveGroupId(group.id); setActiveTab('Groups'); }}
             className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-indigo-300 transition-all flex items-center justify-between group"
           >
@@ -321,14 +321,14 @@ const App: React.FC = () => {
     <div className="px-6 py-8 animate-in slide-in-from-bottom duration-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Friends</h2>
-        <button 
+        <button
           onClick={() => { setEditingFriendId(null); setNewFriendName(''); setIsFriendModalOpen(true); }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-all"
         >
           + Add Friend
         </button>
       </div>
-      
+
       <div className="bg-indigo-50 p-4 rounded-2xl mb-6 border border-indigo-100">
         <p className="text-[10px] uppercase font-bold text-indigo-400 mb-1">Overall Balance</p>
         <div className="flex items-end gap-2">
@@ -343,8 +343,8 @@ const App: React.FC = () => {
         {friends.filter(f => f.id !== 'u1').map(user => {
           const balance = friendBalances[user.id] || 0;
           return (
-            <div 
-              key={user.id} 
+            <div
+              key={user.id}
               onClick={() => { setEditingFriendId(user.id); setNewFriendName(user.name); setIsFriendModalOpen(true); }}
               className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-slate-50 transition-all hover:shadow-md cursor-pointer group"
             >
@@ -357,7 +357,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex gap-2">
                 {Math.abs(balance) > 0 && (
-                  <button 
+                  <button
                     onClick={(e) => { e.stopPropagation(); alert(`Reminded ${user.name}!`); }}
                     className="bg-slate-50 text-indigo-600 text-[10px] font-black px-3 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-tighter"
                   >
@@ -379,7 +379,7 @@ const App: React.FC = () => {
       <div className="">
         <div className="bg-indigo-600 text-white px-6 pb-8 pt-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
           <div className="mb-8 flex items-center">
-            <button 
+            <button
               onClick={() => setActiveGroupId(null)}
               className="group flex items-center gap-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md px-5 py-3 rounded-2xl transition-all shadow-sm border border-white/10"
               aria-label="Back to My Events"
@@ -394,12 +394,12 @@ const App: React.FC = () => {
             <div className="flex-1">
               <h2 className="text-3xl font-black leading-tight tracking-tight">{activeGroup.title}</h2>
               <div className="flex items-center gap-2 mt-2">
-                 <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-sm">{activeGroup.baseCurrency}</span>
-                 <p className="opacity-70 text-[10px] font-black uppercase tracking-widest">{new Date(activeGroup.date).toLocaleDateString()}</p>
+                <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-sm">{activeGroup.baseCurrency}</span>
+                <p className="opacity-70 text-[10px] font-black uppercase tracking-widest">{new Date(activeGroup.date).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div className="bg-white/10 backdrop-blur-sm p-5 rounded-3xl border border-white/10 shadow-sm">
               <span className="text-[10px] uppercase font-black tracking-widest block opacity-60 mb-1">Total Spending</span>
@@ -413,7 +413,7 @@ const App: React.FC = () => {
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
         </div>
-        
+
         <div className="px-6 py-8">
           <div className="mb-10">
             <div className="flex justify-between items-center mb-5 px-1">
@@ -423,8 +423,8 @@ const App: React.FC = () => {
             <div className="space-y-4">
               {settlements.length === 0 ? (
                 <div className="py-10 bg-slate-50 text-center rounded-[2.5rem] border-2 border-dashed border-slate-200/60">
-                   <div className="text-3xl mb-2">✨</div>
-                   <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Perfectly Balanced</p>
+                  <div className="text-3xl mb-2">✨</div>
+                  <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Perfectly Balanced</p>
                 </div>
               ) : (
                 settlements.map((s, idx) => {
@@ -452,11 +452,11 @@ const App: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           <div>
             <div className="flex justify-between items-center mb-5 px-1">
-               <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Expense History</h3>
-               <div className="h-px bg-slate-100 flex-1 ml-4"></div>
+              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Expense History</h3>
+              <div className="h-px bg-slate-100 flex-1 ml-4"></div>
             </div>
             <div className="space-y-5">
               {activeGroup.expenses.length === 0 && (
@@ -471,9 +471,9 @@ const App: React.FC = () => {
                 const payer = activeGroup.members.find(m => m.id === expense.payerId);
                 const cat = CATEGORIES.find(c => c.name === expense.category) || CATEGORIES[5];
                 return (
-                  <div 
-                    key={expense.id} 
-                    onClick={() => openEditModal(expense)} 
+                  <div
+                    key={expense.id}
+                    onClick={() => openEditModal(expense)}
                     className="flex items-center gap-5 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 cursor-pointer hover:shadow-xl hover:border-indigo-100 transition-all active:scale-[0.98] group"
                   >
                     <div className={`w-14 h-14 rounded-3xl ${cat.color} flex items-center justify-center text-white text-2xl shadow-xl shadow-inner group-hover:scale-110 transition-transform`}>
@@ -536,8 +536,8 @@ const App: React.FC = () => {
                           <span className="text-slate-900">${amount.toFixed(1)}</span>
                         </div>
                         <div className="w-full bg-slate-50 h-4 rounded-full overflow-hidden shadow-inner p-0.5">
-                          <div 
-                            className={`${cat.color} h-full transition-all duration-1000 ease-out rounded-full shadow-sm`} 
+                          <div
+                            className={`${cat.color} h-full transition-all duration-1000 ease-out rounded-full shadow-sm`}
                             style={{ width: `${(amount / totalSpent) * 100}%` }}
                           ></div>
                         </div>
@@ -550,7 +550,7 @@ const App: React.FC = () => {
           )}
         </div>
       )}
-      
+
       {activeTab === 'Profile' && (
         <div className="px-6 py-12 text-center">
           <div className="relative inline-block mb-10">
@@ -564,22 +564,22 @@ const App: React.FC = () => {
           <div className="inline-block mt-2 px-4 py-1.5 bg-indigo-50 rounded-full">
             <p className="text-indigo-500 font-black uppercase text-[10px] tracking-[0.25em]">Splitify Elite Member</p>
           </div>
-          
+
           <div className="space-y-4 mt-12">
-             <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all shadow-sm">
-               <div className="flex items-center gap-5">
-                 <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-credit-card text-xl"></i></div>
-                 <span className="text-sm font-black uppercase tracking-widest">Payment Wallets</span>
-               </div>
-               <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
-             </button>
-             <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all shadow-sm">
-               <div className="flex items-center gap-5">
-                 <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-file-export text-xl"></i></div>
-                 <span className="text-sm font-black uppercase tracking-widest">Export Ledger</span>
-               </div>
-               <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
-             </button>
+            <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all shadow-sm">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-credit-card text-xl"></i></div>
+                <span className="text-sm font-black uppercase tracking-widest">Payment Wallets</span>
+              </div>
+              <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
+            </button>
+            <button className="w-full p-8 bg-white text-slate-700 font-bold rounded-[3rem] border border-slate-100 text-left flex items-center justify-between group hover:shadow-xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all shadow-sm">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:scale-110 transition-transform"><i className="fa-solid fa-file-export text-xl"></i></div>
+                <span className="text-sm font-black uppercase tracking-widest">Export Ledger</span>
+              </div>
+              <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
+            </button>
           </div>
         </div>
       )}
@@ -598,8 +598,8 @@ const App: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">What's the plan?</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="e.g. Europe Trip"
                   className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black text-slate-800 placeholder:text-slate-300"
                   value={newGroupTitle}
@@ -608,7 +608,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Event Date</label>
-                <input 
+                <input
                   type="datetime-local"
                   className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] font-black text-slate-800 outline-none"
                   value={newGroupDate}
@@ -617,7 +617,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Base Currency</label>
-                <select 
+                <select
                   className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] font-black outline-none cursor-pointer appearance-none text-slate-800"
                   value={newGroupCurrency}
                   onChange={(e) => setNewGroupCurrency(e.target.value as Currency)}
@@ -626,7 +626,7 @@ const App: React.FC = () => {
                 </select>
               </div>
               <div className="flex flex-col gap-3 mt-6">
-                <button 
+                <button
                   onClick={handleCreateGroup}
                   disabled={!newGroupTitle}
                   className="w-full bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-indigo-100 active:scale-95 transition-all"
@@ -650,8 +650,8 @@ const App: React.FC = () => {
             <div className="space-y-8">
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-1">Full Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="e.g. David Smith"
                   className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 outline-none transition-all font-black placeholder:text-slate-300 text-slate-800"
                   value={newFriendName}
@@ -660,7 +660,7 @@ const App: React.FC = () => {
                 />
               </div>
               <div className="flex flex-col gap-3 mt-10">
-                <button 
+                <button
                   onClick={handleAddOrEditFriend}
                   disabled={!newFriendName}
                   className="w-full bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] disabled:bg-slate-100 disabled:text-slate-300 shadow-2xl shadow-indigo-100 active:scale-95 transition-all"
@@ -668,15 +668,15 @@ const App: React.FC = () => {
                   {editingFriendId ? 'Update Info' : 'Add Contact'}
                 </button>
                 {editingFriendId && (
-                  <button 
+                  <button
                     onClick={() => handleDeleteFriend(editingFriendId)}
                     className="w-full bg-rose-50 text-rose-500 py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all shadow-sm"
                   >
                     Delete Friend
                   </button>
                 )}
-                <button 
-                  onClick={() => { setIsFriendModalOpen(false); setEditingFriendId(null); setNewFriendName(''); }} 
+                <button
+                  onClick={() => { setIsFriendModalOpen(false); setEditingFriendId(null); setNewFriendName(''); }}
                   className="w-full py-2 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] hover:text-indigo-600 transition-colors"
                 >
                   Cancel
@@ -716,7 +716,7 @@ const App: React.FC = () => {
                     ) : (
                       <>
                         <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                           <i className="fa-solid fa-wand-magic-sparkles text-2xl"></i>
+                          <i className="fa-solid fa-wand-magic-sparkles text-2xl"></i>
                         </div>
                         <span className="font-black text-sm text-indigo-600 uppercase tracking-[0.2em]">Scan Receipt</span>
                       </>
@@ -741,27 +741,27 @@ const App: React.FC = () => {
                 {selectedCategory === 'Others' ? (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">What is this for?</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Movie Tickets, Shared Gift" 
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300" 
-                      value={otherDesc} 
-                      onChange={(e) => setOtherDesc(e.target.value)} 
+                    <input
+                      type="text"
+                      placeholder="e.g. Movie Tickets, Shared Gift"
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300"
+                      value={otherDesc}
+                      onChange={(e) => setOtherDesc(e.target.value)}
                     />
                   </div>
                 ) : (
                   <div>
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">Notes (Optional)</label>
-                    <input 
-                      type="text" 
-                      placeholder={`Details about this ${selectedCategory.toLowerCase()}`} 
-                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300" 
-                      value={desc} 
-                      onChange={(e) => setDesc(e.target.value)} 
+                    <input
+                      type="text"
+                      placeholder={`Details about this ${selectedCategory.toLowerCase()}`}
+                      className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-indigo-500/5 transition-all font-black text-slate-800 outline-none placeholder:text-slate-300"
+                      value={desc}
+                      onChange={(e) => setDesc(e.target.value)}
                     />
                   </div>
                 )}
-                
+
                 <div className="flex gap-5">
                   <div className="flex-[2]">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">Value</label>
@@ -777,17 +777,17 @@ const App: React.FC = () => {
 
                 <div>
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block px-2">Date & Time</label>
-                  <input 
-                    type="datetime-local" 
-                    className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] font-black text-slate-800 outline-none" 
-                    value={expenseDate} 
-                    onChange={(e) => setExpenseDate(e.target.value)} 
+                  <input
+                    type="datetime-local"
+                    className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] font-black text-slate-800 outline-none"
+                    value={expenseDate}
+                    onChange={(e) => setExpenseDate(e.target.value)}
                   />
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-slate-100 rounded-[2.5rem] shadow-inner">
-                   <button onClick={() => setSplitMode('equal')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'equal' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Equal Split</button>
-                   <button onClick={() => setSplitMode('custom')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'custom' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Custom</button>
+                  <button onClick={() => setSplitMode('equal')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'equal' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Equal Split</button>
+                  <button onClick={() => setSplitMode('custom')} className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-3xl transition-all ${splitMode === 'custom' ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>Custom</button>
                 </div>
 
                 {splitMode === 'custom' && (
@@ -799,24 +799,24 @@ const App: React.FC = () => {
                       </span>
                     </div>
                     <div className="space-y-5">
-                       {activeGroup?.members.map(user => {
-                         const isSelected = selectedSplitters.includes(user.id);
-                         return (
-                           <div key={user.id} className={`flex items-center gap-5 transition-all ${isSelected ? 'opacity-100 translate-x-1' : 'opacity-20 scale-95 grayscale'}`}>
-                             <img src={user.avatar} className="w-12 h-12 rounded-[1.25rem] shadow-md border-4 border-white" />
-                             <span className="text-xs font-black text-slate-700 flex-1 truncate uppercase tracking-tight">{user.name}</span>
-                             <div className="relative">
-                               <input 
-                                 type="number" 
-                                 disabled={!isSelected}
-                                 className="w-28 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-right text-sm font-black focus:ring-4 focus:ring-indigo-500/10 outline-none shadow-sm"
-                                 value={customSplits[user.id] || ''} 
-                                 onChange={(e) => handleCustomSplitChange(user.id, e.target.value)}
-                               />
-                             </div>
-                           </div>
-                         );
-                       })}
+                      {activeGroup?.members.map(user => {
+                        const isSelected = selectedSplitters.includes(user.id);
+                        return (
+                          <div key={user.id} className={`flex items-center gap-5 transition-all ${isSelected ? 'opacity-100 translate-x-1' : 'opacity-20 scale-95 grayscale'}`}>
+                            <img src={user.avatar} className="w-12 h-12 rounded-[1.25rem] shadow-md border-4 border-white" />
+                            <span className="text-xs font-black text-slate-700 flex-1 truncate uppercase tracking-tight">{user.name}</span>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                disabled={!isSelected}
+                                className="w-28 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-right text-sm font-black focus:ring-4 focus:ring-indigo-500/10 outline-none shadow-sm"
+                                value={customSplits[user.id] || ''}
+                                onChange={(e) => handleCustomSplitChange(user.id, e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -849,9 +849,9 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={handleSaveExpense} 
-                disabled={!selectedCategory || amount <= 0 || selectedSplitters.length === 0 || (splitMode === 'custom' && Math.abs(splitDifference) > 0.01) || (selectedCategory === 'Others' && !otherDesc)} 
+              <button
+                onClick={handleSaveExpense}
+                disabled={!selectedCategory || amount <= 0 || selectedSplitters.length === 0 || (splitMode === 'custom' && Math.abs(splitDifference) > 0.01) || (selectedCategory === 'Others' && !otherDesc)}
                 className="w-full mt-12 bg-indigo-600 text-white py-8 rounded-[3rem] font-black uppercase text-base tracking-[0.3em] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-300 active:scale-[0.98] transition-all mb-12"
               >
                 {editingExpenseId ? 'Commit Changes' : 'Post Entry'}

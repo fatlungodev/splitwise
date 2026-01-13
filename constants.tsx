@@ -13,9 +13,9 @@ export const CATEGORIES = [
 ];
 
 export const MOCK_USERS: User[] = [
-  { id: 'u1', name: 'Alice', avatar: 'https://picsum.photos/seed/alice/100' },
-  { id: 'u2', name: 'Bob', avatar: 'https://picsum.photos/seed/bob/100' },
-  { id: 'u3', name: 'Charlie', avatar: 'https://picsum.photos/seed/charlie/100' },
+  { id: 'u1', name: 'Alice', avatar: '/avatars/alice.jpg' },
+  { id: 'u2', name: 'Bob', avatar: '/avatars/bob.jpg' },
+  { id: 'u3', name: 'Charlie', avatar: '/avatars/charlie.jpg' },
 ];
 
 export const EXCHANGE_RATES: Record<Currency, number> = {

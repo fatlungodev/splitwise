@@ -26,28 +26,28 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
 
       {/* Bottom Nav */}
       <nav className="bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-around py-4 px-6 fixed bottom-0 max-w-md w-full z-40">
-        <NavItem 
-          icon="fa-layer-group" 
-          label="Groups" 
-          active={activeTab === 'Groups'} 
+        <NavItem
+          icon="fa-layer-group"
+          label="Groups"
+          active={activeTab === 'Groups'}
           onClick={() => onTabChange('Groups')}
         />
-        <NavItem 
-          icon="fa-user-friends" 
-          label="Friends" 
-          active={activeTab === 'Friends'} 
+        <NavItem
+          icon="fa-user-friends"
+          label="Friends"
+          active={activeTab === 'Friends'}
           onClick={() => onTabChange('Friends')}
         />
-        <NavItem 
-          icon="fa-chart-pie" 
-          label="Analysis" 
-          active={activeTab === 'Analysis'} 
+        <NavItem
+          icon="fa-chart-pie"
+          label="Analysis"
+          active={activeTab === 'Analysis'}
           onClick={() => onTabChange('Analysis')}
         />
-        <NavItem 
-          icon="fa-user" 
-          label="Profile" 
-          active={activeTab === 'Profile'} 
+        <NavItem
+          icon="fa-user"
+          label="Profile"
+          active={activeTab === 'Profile'}
           onClick={() => onTabChange('Profile')}
         />
       </nav>
@@ -56,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
 };
 
 const NavItem: React.FC<{ icon: string; label: string; active?: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
-  <button 
+  <button
     onClick={onClick}
     className={`flex flex-col items-center gap-1 cursor-pointer transition-all duration-300 transform ${active ? 'text-indigo-600 scale-110' : 'text-slate-400 hover:text-indigo-400'}`}
   >
